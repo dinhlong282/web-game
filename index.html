@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Subway Surfers - 1:1 Authentic 3D Web Edition</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- 3D Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- TOP PERMANENT CURRENCY BAR -->
+    <div class="top-currency-bar">
+        <div class="currency-group-left">
+            <div class="pill-currency coins">
+                <span class="pill-icon">🪙</span>
+                <span class="pill-amount total-coins-display">0</span>
+                <div class="pill-add-btn" onclick="openShopTab('upgrades')" title="Mua Hộp quà / Kiếm thêm xu">+</div>
+            </div>
+            <div class="pill-currency keys">
+                <span class="pill-icon">🗝️</span>
+                <span class="pill-amount total-keys-display">0</span>
+                <div class="pill-add-btn" onclick="openShopTab('upgrades')" title="Mua Hộp quà kiếm chìa khóa">+</div>
+            </div>
+        </div>
+
+        <div class="currency-group-right">
+            <button class="icon-btn-circle" id="hud-sound-btn" onclick="toggleAudio()" title="Bật/Tắt Âm thanh">🔊</button>
+            <button class="icon-btn-circle" onclick="openSettingsModal()" title="Cài đặt">⚙️</button>
+        </div>
+    </div>
+
+    <!-- IN-GAME HUD OVERLAY -->
+    <div id="hud" class="hidden">
+        <div class="hud-game-top">
+            <!-- Left: Coin counter & Hoverboard count -->
+            <div class="hud-left-stats">
+                <div class="hud-coin-badge">
+                    <span class="coin-icon">🪙</span>
+                    <span class="coin-num" id="run-coins-display">0</span>
+                </div>
+                <div class="hud-hoverboard-badge">
+                    <span>🛹</span>
+                    <span id="hud-board-count">CHẠM ĐÚP</span>
+                </div>
+            </div>
+
+            <!-- Center: Word Hunt Banner -->
+            <div class="word-hunt-container">
+                <div class="word-letter" id="letter-s">S</div>
+                <div class="word-letter" id="letter-u">U</div>
+                <div class="word-letter" id="letter-r">R</div>
+                <div class="word-letter" id="letter-f">F</div>
+            </div>
+
+            <!-- Right: Score, Multiplier, Pause -->
+            <div class="hud-right-score">
+                <div class="score-main-box">
+                    <div class="multiplier-tag" id="multiplier-badge">1X</div>
+                    <div class="score-number" id="score-display">0</div>
+                    <button class="icon-btn-circle" onclick="handleTogglePause()" style="width: 36px; height: 36px; font-size: 16px; margin-left: 4px;" title="Tạm dừng">⏸️</button>
+                </div>
+                <div class="highscore-tracker">
+                    <span>🏆 KỶ LỤC:</span>
+                    <span class="highscore-display-val">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Powerup Timers -->
+        <div class="powerups-active-list">
+            <div class="powerup-hud-item hidden" id="hud-magnet">
+                <span class="powerup-hud-icon">🧲</span>
+                <div class="powerup-hud-info">
+                    <div class="powerup-hud-name">NAM CHÂM HÚT XU</div>
+                    <div class="powerup-progress-bg"><div class="powerup-progress-fill"></div></div>
+                </div>
+            </div>
+            <div class="powerup-hud-item hidden" id="hud-jetpack">
+                <span class="powerup-hud-icon">🚀</span>
+                <div class="powerup-hud-info">
+                    <div class="powerup-hud-name">PHẢN LỰC JETPACK</div>
+                    <div class="powerup-progress-bg"><div class="powerup-progress-fill"></div></div>
+                </div>
+            </div>
+            <div class="powerup-hud-item hidden" id="hud-sneakers">
+                <span class="powerup-hud-info">👟</span>
+                <div class="powerup-hud-info">
+                    <div class="powerup-hud-name">GIÀY SIÊU NHẢY</div>
+                    <div class="powerup-progress-bg"><div class="powerup-progress-fill"></div></div>
+                </div>
+            </div>
+            <div class="powerup-hud-item hidden" id="hud-multiplier">
+                <span class="powerup-hud-icon">⭐</span>
+                <div class="powerup-hud-info">
+                    <div class="powerup-hud-name">NHÂN ĐÔI ĐIỂM (2X)</div>
+                    <div class="powerup-progress-bg"><div class="powerup-progress-fill"></div></div>
+                </div>
+            </div>
+            <div class="powerup-hud-item hidden" id="hud-hoverboard">
+                <span class="powerup-hud-icon">🛹</span>
+                <div class="powerup-hud-info">
+                    <div class="powerup-hud-name">VÁN TRƯỢT BẢO VỆ</div>
+                    <div class="powerup-progress-bg"><div class="powerup-progress-fill"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Virtual Controls -->
+        <div class="mobile-controls">
+            <div class="v-ctrl-group">
+                <button class="v-btn" onclick="if(window.game&&window.game.player)window.game.player.moveLeft()">⬅️</button>
+                <button class="v-btn" onclick="if(window.game&&window.game.player)window.game.player.moveRight()">➡️</button>
+            </div>
+            <div class="v-ctrl-group">
+                <button class="v-btn" onclick="if(window.game&&window.game.player)window.game.player.activateHoverboard()" title="Gọi ván trượt">🛹</button>
+                <button class="v-btn" onclick="if(window.game&&window.game.player)window.game.player.jump()">⬆️</button>
+                <button class="v-btn" onclick="if(window.game&&window.game.player)window.game.player.slide()">⬇️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- START / MAIN MENU (1:1 AUTHENTIC SUBWAY SURFERS) -->
+    <div class="overlay-screen" id="menu-screen">
+        <div class="main-menu-center">
+            <div class="subway-logo-container">
+                <div class="subway-logo-text">SUBWAY<br>SURFERS</div>
+                <div class="subway-logo-sub">🌴 MIAMI BEACH TOUR</div>
+            </div>
+
+            <div class="menu-highscore-badge">
+                <span class="trophy">🏆</span>
+                <span>KỶ LỤC ĐIỂM:</span>
+                <span class="hs-val highscore-display-val">0</span>
+            </div>
+
+            <button class="tap-to-play-banner" onclick="handleStartGame()">
+                <span>CHẠY NGAY</span>
+                <span class="arrow-anim">▶▶▶</span>
+            </button>
+        </div>
+
+        <!-- 5-Tab Navigation Bar -->
+        <div class="bottom-nav-bar">
+            <div class="nav-tab-item" onclick="openTopRunModal()">
+                <span class="nav-tab-icon">🏆</span>
+                <span class="nav-tab-label">TOP RUN</span>
+            </div>
+            <div class="nav-tab-item" onclick="openShopTab('characters')">
+                <span class="nav-tab-icon">👤</span>
+                <span class="nav-tab-label">ME</span>
+            </div>
+            <div class="nav-tab-item" onclick="openShopTab('upgrades')">
+                <span class="nav-tab-icon">🛍️</span>
+                <span class="nav-tab-label">SHOP</span>
+            </div>
+            <div class="nav-tab-item" onclick="openEventsModal()">
+                <span class="nav-tab-icon">🎁</span>
+                <span class="nav-tab-label">EVENTS</span>
+            </div>
+            <div class="nav-tab-item" onclick="openSettingsModal()">
+                <span class="nav-tab-icon">⚙️</span>
+                <span class="nav-tab-label">CÀI ĐẶT</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAVE ME / REVIVE COUNTDOWN MODAL -->
+    <div class="overlay-screen hidden" id="save-me-modal">
+        <div class="save-me-card">
+            <h2 class="save-me-title">SAVE ME!</h2>
+            <div class="save-me-timer-circle" id="save-me-countdown">5</div>
+            <button class="btn-save-me" onclick="handleReviveWithKey()">
+                <span>🗝️ DÙNG 1 CHÌA KHÓA</span>
+            </button>
+            <button class="btn-skip-revive" onclick="handleSkipSaveMe()">✖ Bỏ qua để xem điểm</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div class="overlay-screen hidden" id="game-over-modal">
+        <div class="go-card">
+            <h2 class="go-header-title">GAME OVER</h2>
+            <div class="go-score-big" id="final-score">0</div>
+
+            <div class="go-stats-grid">
+                <div class="go-stat-col">
+                    <span class="go-stat-lbl">Tiền vàng</span>
+                    <span class="go-stat-val">🪙 <span id="final-coins">0</span></span>
+                </div>
+                <div class="go-stat-col">
+                    <span class="go-stat-lbl">Quãng đường</span>
+                    <span class="go-stat-val" id="final-distance">0m</span>
+                </div>
+                <div class="go-stat-col">
+                    <span class="go-stat-lbl">Kỷ lục</span>
+                    <span class="go-stat-val highscore-display-val">0</span>
+                </div>
+            </div>
+
+            <div class="go-actions-row">
+                <button class="btn-go-play" onclick="handleRestartGame()">🔄 CHƠI LẠI</button>
+                <button class="btn-go-home" onclick="handleShowMenu()">🏠 HOME</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAUSE MODAL -->
+    <div class="overlay-screen hidden" id="pause-modal">
+        <div class="go-card" style="border-color: #00f0ff;">
+            <h2 class="go-header-title" style="color: #00f0ff;">TẠM DỪNG</h2>
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 25px;">
+                <button class="btn-go-play" onclick="handleTogglePause()">▶ TIẾP TỤC</button>
+                <button class="btn-go-home" style="padding: 12px;" onclick="handleRestartGame()">🔄 CHƠI LẠI</button>
+                <button class="btn-go-home" style="padding: 12px;" onclick="handleShowMenu()">🏠 VỀ MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHOP & ME INVENTORY MODAL -->
+    <div class="overlay-screen hidden" id="shop-modal">
+        <div class="shop-modal-card">
+            <div class="shop-modal-header">
+                <h2 class="shop-header-title" id="shop-modal-title">CỬA HÀNG & NHÂN VẬT</h2>
+                <button class="icon-btn-circle" onclick="closeShopModal()">✖</button>
+            </div>
+
+            <div class="shop-nav-tabs">
+                <button class="shop-tab-btn active" id="tab-chars" onclick="switchShopTab('characters')">👤 NHÂN VẬT</button>
+                <button class="shop-tab-btn" id="tab-boards" onclick="switchShopTab('boards')">🛹 VÁN TRƯỢT</button>
+                <button class="shop-tab-btn" id="tab-upgrades" onclick="switchShopTab('upgrades')">⚡ NÂNG CẤP & QUÀ</button>
+            </div>
+
+            <div class="shop-content-scroll" id="shop-characters-list"></div>
+            <div class="shop-content-scroll hidden" id="shop-boards-list"></div>
+            <div class="shop-content-scroll hidden" id="shop-upgrades-list"></div>
+        </div>
+    </div>
+
+    <!-- TOP RUN / LEADERBOARD MODAL -->
+    <div class="overlay-screen hidden" id="toprun-modal">
+        <div class="go-card" style="border-color: #ffd100; max-width: 500px;">
+            <h2 class="go-header-title" style="color: #ffd100;">🏆 BẢNG XẾP HẠNG</h2>
+            <div style="background: rgba(0,0,0,0.35); border-radius: 18px; padding: 15px; margin: 15px 0; text-align: left;">
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: 800;">
+                    <span>🥇 HẠNG 1 (DIAMOND)</span>
+                    <span style="color: #ffd100;"><span class="highscore-display-val">0</span> pts</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); color: #cbd5e1;">
+                    <span>🥈 HẠNG 2 (GOLD)</span>
+                    <span>15,400 pts</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px; color: #94a3b8;">
+                    <span>🥉 HẠNG 3 (SILVER)</span>
+                    <span>8,200 pts</span>
+                </div>
+            </div>
+            <button class="btn-go-home" style="width: 100%;" onclick="closeTopRunModal()">ĐÓNG</button>
+        </div>
+    </div>
+
+    <!-- EVENTS / WORD HUNT MODAL -->
+    <div class="overlay-screen hidden" id="events-modal">
+        <div class="go-card" style="border-color: #ff007f; max-width: 500px;">
+            <h2 class="go-header-title" style="color: #ff007f;">🎁 SỰ KIỆN SĂN CHỮ</h2>
+            <p style="color: #cbd5e1; margin-bottom: 15px;">Thu thập đủ 4 chữ cái <strong style="color: #ffd100;">S - U - R - F</strong> trong các lượt chạy để nhận Hộp Quà Siêu Cấp!</p>
+            <div class="word-hunt-container" style="justify-content: center; margin-bottom: 20px;">
+                <div class="word-letter" style="width: 44px; height: 50px; font-size: 26px;">S</div>
+                <div class="word-letter" style="width: 44px; height: 50px; font-size: 26px;">U</div>
+                <div class="word-letter" style="width: 44px; height: 50px; font-size: 26px;">R</div>
+                <div class="word-letter" style="width: 44px; height: 50px; font-size: 26px;">F</div>
+            </div>
+            <button class="btn-go-home" style="width: 100%;" onclick="closeEventsModal()">ĐÓNG</button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="overlay-screen hidden" id="settings-modal">
+        <div class="go-card" style="border-color: #94a3b8; max-width: 460px;">
+            <h2 class="go-header-title" style="color: #ffffff;">⚙️ CÀI ĐẶT</h2>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin: 20px 0; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 12px 18px; border-radius: 16px;">
+                    <span>🔊 Âm thanh & Nhạc nền</span>
+                    <button class="btn-card-action equip" onclick="toggleAudio()" style="padding: 6px 14px;">BẬT / TẮT</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 12px 18px; border-radius: 16px;">
+                    <span>🎮 Hướng dẫn điều khiển</span>
+                    <span style="color: #00f0ff; font-size: 13px;">Phím mũi tên / A-D-W-S</span>
+                </div>
+            </div>
+            <button class="btn-go-home" style="width: 100%;" onclick="closeSettingsModal()">ĐÓNG</button>
+        </div>
+    </div>
+
+    <!-- UI Helpers -->
+    <script>
+        function handleStartGame() {
+            if (!window.game && typeof Game !== 'undefined') {
+                window.game = new Game();
+            }
+            if (window.game) {
+                window.game.startGame();
+            }
+        }
+
+        function handleRestartGame() {
+            if (window.game) {
+                window.game.restartGame();
+            } else {
+                handleStartGame();
+            }
+        }
+
+        function handleTogglePause() {
+            if (window.game) {
+                window.game.togglePause();
+            }
+        }
+
+        function handleShowMenu() {
+            if (window.game) {
+                window.game.showMenu();
+            }
+        }
+
+        function handleReviveWithKey() {
+            if (window.game) {
+                window.game.reviveWithKey();
+            }
+        }
+
+        function handleSkipSaveMe() {
+            if (window.game) {
+                window.game.skipSaveMe();
+            }
+        }
+
+        function openShopTab(tab) {
+            if (window.shopManager) {
+                window.shopManager.renderUI();
+            }
+            switchShopTab(tab);
+            document.getElementById('shop-modal').classList.remove('hidden');
+        }
+
+        function closeShopModal() {
+            document.getElementById('shop-modal').classList.add('hidden');
+        }
+
+        function switchShopTab(tab) {
+            const tabs = ['characters', 'boards', 'upgrades'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab-' + (t === 'characters' ? 'chars' : t));
+                const list = document.getElementById('shop-' + t + '-list');
+                if (btn) {
+                    if (t === tab) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+                if (list) {
+                    if (t === tab) list.classList.remove('hidden');
+                    else list.classList.add('hidden');
+                }
+            });
+        }
+
+        function openTopRunModal() {
+            if (window.game) window.game.updateHUDHighScore();
+            document.getElementById('toprun-modal').classList.remove('hidden');
+        }
+        function closeTopRunModal() {
+            document.getElementById('toprun-modal').classList.add('hidden');
+        }
+
+        function openEventsModal() {
+            document.getElementById('events-modal').classList.remove('hidden');
+        }
+        function closeEventsModal() {
+            document.getElementById('events-modal').classList.add('hidden');
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function toggleAudio() {
+            if (window.audioManager) {
+                const muted = window.audioManager.toggleMute();
+                const btn = document.getElementById('hud-sound-btn');
+                if (btn) btn.textContent = muted ? '🔇' : '🔊';
+            }
+        }
+    </script>
+
+    <!-- Game Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/models.js"></script>
+    <script src="js/track.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/shop.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
